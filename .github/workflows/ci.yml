@@ -15,6 +15,9 @@ jobs:
   build-and-test:
     name: Build, Test & Coverage
     runs-on: ubuntu-latest
+    permissions:
+      checks: write        # required by publish-unit-test-result-action
+      contents: read
 
     services:
       postgres:
