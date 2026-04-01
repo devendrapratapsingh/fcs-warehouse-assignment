@@ -11,10 +11,12 @@ public class LegacyStoreManagerGateway {
   private static final Logger LOGGER = Logger.getLogger(LegacyStoreManagerGateway.class);
 
   public void createStoreOnLegacySystem(Store store) {
+    // just to emulate as this would send this to a legacy system, let's write a temp file with the
     writeToFile(store);
   }
 
   public void updateStoreOnLegacySystem(Store store) {
+    // just to emulate as this would send this to a legacy system, let's write a temp file with the
     writeToFile(store);
   }
 
