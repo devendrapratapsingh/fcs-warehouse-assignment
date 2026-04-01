@@ -6,93 +6,73 @@ Here we have 3 questions related to the code base for you to answer. It is not a
 
 **Answer:**
 ```txt
-Yes — I would converge on a single repository pattern using Panache, and I would do it gradually.
+Yes, I would. The codebase currently mixes two styles:
+- Store and Product use Active Record (the entity calls persist(), delete() directly)
+- Warehouse uses a separate Repository class (WarehouseRepository implements PanacheRepository)
 
-Currently the codebase mixes two styles:
-  • Active Record (Store, Product) — the entity itself holds persistence methods like persist(), delete(), findById().
-  • Repository pattern (WarehouseRepository, FulfillmentRepository) — a dedicated class implements PanacheRepository<T>
-    and the entity is a plain JPA class (DbWarehouse).
+It works, but it's inconsistent and that inconsistency has a real cost when you're
+maintaining it — you have to remember which style applies to which entity. The bigger
+practical issue is testability: Active Record entities need a running Quarkus container
+to test persistence behaviour, whereas a repository can be mocked with Mockito in a
+plain unit test. That difference shows up in test run time and in how easy it is to
+test edge cases in isolation.
 
-The inconsistency creates a higher cognitive load for anyone maintaining the codebase: you have to remember
-which style applies to which entity, and it affects how you write tests (Active Record entities are harder
-to mock in pure unit tests without starting Quarkus).
-
-My preference for a maintained codebase is the Repository pattern because:
-  1. Testability — repositories can be mocked with Mockito; Active Record requires @QuarkusTest + a real DB.
-  2. Single Responsibility — the entity is only a data holder; persistence logic lives in one dedicated class.
-  3. Extensibility — adding query methods, caching, or switching ORM providers touches one class, not the entity.
-
-I would refactor Product and Store to use dedicated PanacheRepository classes (ProductRepository, StoreRepository)
-in a subsequent sprint, keeping the Active Record variants as thin adapters until the migration is complete.
-This is a low-risk, incremental change that pays compound interest in testability and maintainability.
+I'd move Store and Product to the repository pattern, probably as part of a larger
+refactor sprint rather than as a one-off change. Not urgent, but worth doing before the
+codebase grows further and the inconsistency becomes harder to untangle.
 ```
 ----
 2. When it comes to API spec and endpoints handlers, we have an Open API yaml file for the `Warehouse` API from which we generate code, but for the other endpoints - `Product` and `Store` - we just coded directly everything. What would be your thoughts about what are the pros and cons of each approach and what would be your choice?
 
 **Answer:**
 ```txt
-Code-first (Product & Store):
-  Pros:
-    • Fastest path from idea to working endpoint — no context switching between YAML and Java.
-    • The contract always reflects what is actually deployed (no drift).
-    • Simpler toolchain — no code-generation step in the build.
-  Cons:
-    • API consumers (frontend, other services) cannot agree on the contract upfront.
-    • Harder to enforce a consistent style across teams (naming, error shapes, versioning).
-    • Generating client SDKs requires post-hoc spec extraction, which can miss details.
+Both approaches have real trade-offs and I don't think either is universally better.
 
-Spec-first / OpenAPI-driven (Warehouse):
-  Pros:
-    • The contract is the single source of truth: consumers can generate typed clients before
-      the server is built, enabling parallel development.
-    • Forces explicit, reviewed API design decisions (field names, status codes, error bodies)
-      before any code is written — much cheaper to change at spec stage.
-    • Consistency enforced by the generator — all endpoints follow the same shape.
-  Cons:
-    • Adds build complexity (generator plugin, generated sources in version control or .gitignore).
-    • Generated interfaces can be verbose or opinionated; customising them requires extra glue.
-    • Round-tripping spec ↔ implementation can cause merge conflicts when both evolve.
+Code-first (Product & Store) is faster to get started and the spec always reflects what's
+actually deployed — there's no risk of the YAML drifting from the implementation. The
+downside is that consumers can't agree on the contract until the code exists, which makes
+parallel development harder.
 
-My choice: Spec-first for any API with external consumers or multiple teams.
-For an internal monolith where the team owns every caller, code-first with a Quarkus SmallRye
-OpenAPI annotation scan is a pragmatic middle ground — you write code, and the spec is generated
-automatically, giving you most of the benefits of spec-first with none of the YAML ceremony.
-In this codebase I would adopt that hybrid approach: annotate Product and Store resources with
-@Tag, @Operation, and @APIResponse, let SmallRye generate the spec, and use that spec as the
-contract for Warehouse going forward.
+Spec-first (Warehouse via OpenAPI YAML) forces you to think about the API design before
+you write any code, which is genuinely valuable — it's much cheaper to rename a field in
+YAML than to change it after clients are already using it. The cost is build complexity
+and the occasional frustration when the generated interfaces are more verbose than what
+you'd have written by hand.
+
+My preference in practice depends on the context. For an API with external consumers or
+multiple teams working in parallel, spec-first is worth the overhead. For an internal
+service where the same team owns the whole stack, I'd lean toward code-first with
+SmallRye OpenAPI annotations — you write the code, the spec gets generated automatically,
+and you get most of the benefits without maintaining a YAML file separately.
+
+For this specific codebase, I'd probably add proper @Operation and @APIResponse annotations
+to Product and Store, let SmallRye generate the spec, and use that as the contract
+going forward. That gets you to a consistent approach without a big upfront rewrite.
 ```
 ----
 3. Given the need to balance thorough testing with time and resource constraints, how would you prioritize and implement tests for this project? Which types of tests would you focus on, and how would you ensure test coverage remains effective over time?
 
 **Answer:**
 ```txt
-Priority order (highest ROI first):
+Given time constraints, I'd focus on unit tests for domain logic first — the validators and
+use cases in this project are a good example. They're fast to write, run in milliseconds,
+and cover the business rules that are most likely to break. Each validator here gets its
+own test class that checks the happy path and each distinct failure condition. That's not
+exhaustive, but it's the right level of coverage for the effort.
 
-1. Unit tests for domain logic and validators (no DB, pure Mockito).
-   These are cheap to write, run in milliseconds, and catch the majority of business-rule bugs.
-   Every use case (Create, Replace, Archive) and every validator has its own test class covering
-   the happy path, each distinct failure branch, and boundary conditions.
+Integration tests (@QuarkusTest with Dev Services) are second priority. They're slower
+but they catch things unit tests miss — wiring issues, transaction boundaries, HTTP error
+shapes. For this project, WarehouseEndpointIT covers the full HTTP contract end-to-end.
+I wouldn't skip these even under time pressure because they give confidence that the
+pieces actually fit together.
 
-2. Integration tests for the REST layer (@QuarkusTest + Dev Services).
-   These verify the full HTTP contract — status codes, JSON shapes, correct DB state — without
-   needing a separately deployed environment. They are slower (~30 s for the whole suite) but
-   give very high confidence that wiring, transactions, and error mappers work end-to-end.
+BDD scenarios I'd use selectively — they're good for cross-cutting rules that are easier
+to express in Gherkin than in JUnit (e.g., "a warehouse cannot exceed location capacity"),
+and they serve as living documentation for non-technical reviewers. I wouldn't write
+Cucumber steps for every unit test though; that just creates duplication.
 
-3. BDD / Cucumber scenarios for cross-cutting business rules.
-   Written in Gherkin, these are readable by non-engineers and directly map to the business
-   requirements in CODE_ASSIGNMENT.md. They live at the same @QuarkusTest level as integration
-   tests but express intent rather than implementation.
-
-4. Contract tests (consumer-driven, e.g. Pact) — deferred until there are real external consumers.
-
-Coverage strategy to keep tests effective over time:
-  • JaCoCo enforces a minimum threshold (currently 95%+ instructions). A failed coverage gate
-    blocks the build, preventing regressions from slipping in unnoticed.
-  • Test isolation: each @QuarkusTest class uses the same Dev Services container but restores
-    seed data after mutations (as done in WarehouseRepositoryTest), so tests don't depend on
-    execution order when run in isolation.
-  • BDD feature files serve as living documentation — a new business rule gets a Gherkin
-    scenario first, then the step definitions and implementation, following BDD's red-green loop.
-  • The CI pipeline runs the full suite on every PR, with test results published to GitHub Checks,
-    so failures are visible immediately rather than discovered later.
+To keep coverage meaningful over time: JaCoCo with a threshold enforced in CI means
+regressions get caught before merge rather than discovered during review. I'd also make
+sure tests fail for the right reasons — a test that only verifies HTTP 200 without
+checking the response body doesn't really tell you much.
 ```
