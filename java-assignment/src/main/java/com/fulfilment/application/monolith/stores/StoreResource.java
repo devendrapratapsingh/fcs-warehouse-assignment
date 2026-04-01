@@ -28,8 +28,6 @@ import org.jboss.logging.Logger;
 @Consumes("application/json")
 public class StoreResource {
 
-  @Inject LegacyStoreManagerGateway legacyStoreManagerGateway;
-
   @Inject Event<StoreEvent> storeEvent;
 
   private static final Logger LOGGER = Logger.getLogger(StoreResource.class.getName());

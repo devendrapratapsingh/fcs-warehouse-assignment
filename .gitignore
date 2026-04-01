@@ -85,3 +85,5 @@ nb-configuration.xml
 .npm
 .eslintcache
 SOLUTION_SUMMARY.md
+.github/instructions
+.github/*.md
