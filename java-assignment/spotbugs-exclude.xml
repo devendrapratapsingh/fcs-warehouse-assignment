@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SpotBugs exclusion filter
+  ─────────────────────────
+  Add entries here to suppress false-positives.
+  Docs: https://spotbugs.readthedocs.io/en/stable/filter.html
+-->
+<FindBugsFilter>
+
+    <!-- ── Lombok-generated code ──────────────────────────────────────── -->
+    <!-- Lombok @Data/@Builder generates equals/hashCode that SpotBugs    -->
+    <!-- flags as EQ_DOESNT_OVERRIDE_EQUALS when a parent class exists.   -->
+    <Match>
+        <Bug pattern="EQ_DOESNT_OVERRIDE_EQUALS"/>
+    </Match>
+
+    <!-- ── JPA / Panache entities ─────────────────────────────────────── -->
+    <!-- Public fields are intentional in Panache Active Record entities.  -->
+    <Match>
+        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
+    </Match>
+    <Match>
+        <Bug pattern="UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD"/>
+    </Match>
+
+    <!-- ── CDI / Quarkus injection ────────────────────────────────────── -->
+    <!-- SpotBugs sees @Inject fields as "never written" because CDI       -->
+    <!-- populates them at runtime, not at compile time.                   -->
+    <Match>
+        <Bug pattern="UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+    </Match>
+
+</FindBugsFilter>

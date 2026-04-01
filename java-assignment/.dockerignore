@@ -1,0 +1,17 @@
+# Exclude the local Maven build output — the builder stage compiles from source.
+target/
+
+# IDE and OS noise
+.idea/
+*.iml
+.DS_Store
+**/.DS_Store
+
+# Git history (not needed inside the image)
+.git/
+.gitignore
+
+# Test reports and coverage artefacts
+**/surefire-reports/
+**/jacoco.exec
+**/cucumber-reports/

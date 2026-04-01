@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PMD Ruleset — Warehouse Colocation System
+  ─────────────────────────────────────────
+  Curated set of rules relevant to a Quarkus / CDI / JPA project.
+  Docs: https://pmd.github.io/pmd/pmd_rules_java.html
+-->
+<ruleset name="warehouse-ruleset"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0
+                             https://pmd.sourceforge.net/ruleset_2_0_0.xsd">
+
+    <description>Rules enforced on the Warehouse Colocation project.</description>
+
+    <!-- ── Bug-prone patterns ─────────────────────────────────────────── -->
+    <rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals">
+        <properties>
+            <!-- allow small strings like "id", "code" repeated in tests -->
+            <property name="minimumLength" value="5"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock"/>
+    <rule ref="category/java/errorprone.xml/ReturnEmptyCollectionRatherThanNull"/>
+    <rule ref="category/java/errorprone.xml/CloseResource"/>
+    <rule ref="category/java/errorprone.xml/EqualsNull"/>
+    <rule ref="category/java/errorprone.xml/BrokenNullCheck"/>
+
+    <!-- ── Best practices ─────────────────────────────────────────────── -->
+    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod"/>
+    <rule ref="category/java/bestpractices.xml/UnusedFormalParameter"/>
+    <rule ref="category/java/bestpractices.xml/AvoidReassigningParameters"/>
+    <rule ref="category/java/bestpractices.xml/UseCollectionIsEmpty"/>
+    <rule ref="category/java/bestpractices.xml/SimplifiableTestAssertion"/>
+
+    <!-- ── Performance ────────────────────────────────────────────────── -->
+    <rule ref="category/java/performance.xml/BigIntegerInstantiation"/>
+    <rule ref="category/java/performance.xml/StringInstantiation"/>
+    <rule ref="category/java/performance.xml/UseStringBufferForStringAppends"/>
+
+    <!-- ── Security ───────────────────────────────────────────────────── -->
+    <rule ref="category/java/security.xml"/>
+
+    <!-- ── Design (SOLID-aligned) ─────────────────────────────────────── -->
+    <!-- Flags methods with too many parameters — hints at SRP violation  -->
+    <rule ref="category/java/design.xml/ExcessiveParameterList">
+        <properties>
+            <property name="minimum" value="6"/>
+        </properties>
+    </rule>
+    <!-- Flags classes that are too large — hints at SRP violation        -->
+    <rule ref="category/java/design.xml/ExcessiveClassLength">
+        <properties>
+            <property name="minimum" value="300"/>
+        </properties>
+    </rule>
+    <!-- Flags methods that are too complex                               -->
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="10"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/FinalFieldCouldBeStatic"/>
+    <rule ref="category/java/design.xml/ImmutableField"/>
+
+</ruleset>
