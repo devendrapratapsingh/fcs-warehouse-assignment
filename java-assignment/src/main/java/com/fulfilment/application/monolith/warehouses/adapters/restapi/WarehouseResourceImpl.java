@@ -50,9 +50,13 @@ public class WarehouseResourceImpl implements WarehouseResource {
 
   @Override
   public com.warehouse.api.beans.Warehouse getAWarehouseUnitByID(String id) {
-    Warehouse warehouse = warehouseRepository.findByBusinessUnitCode(id);
+    Long numericId = parseId(id);
+    if (numericId == null) {
+      throw new NotFoundException("Warehouse with id '" + id + "' not found.");
+    }
+    Warehouse warehouse = warehouseRepository.findActiveById(numericId);
     if (warehouse == null) {
-      throw new NotFoundException("Warehouse with business unit code '" + id + "' not found.");
+      throw new NotFoundException("Warehouse with id '" + id + "' not found.");
     }
     return toWarehouseResponse(warehouse);
   }
@@ -60,9 +64,13 @@ public class WarehouseResourceImpl implements WarehouseResource {
   @Override
   @Transactional
   public void archiveAWarehouseUnitByID(String id) {
-    Warehouse warehouse = warehouseRepository.findByBusinessUnitCode(id);
+    Long numericId = parseId(id);
+    if (numericId == null) {
+      throw new NotFoundException("Warehouse with id '" + id + "' not found.");
+    }
+    Warehouse warehouse = warehouseRepository.findActiveById(numericId);
     if (warehouse == null) {
-      throw new NotFoundException("Warehouse with business unit code '" + id + "' not found.");
+      throw new NotFoundException("Warehouse with id '" + id + "' not found.");
     }
     archiveWarehouseOperation.archive(warehouse);
   }
@@ -105,5 +113,13 @@ public class WarehouseResourceImpl implements WarehouseResource {
     warehouse.capacity = data.getCapacity();
     warehouse.stock = data.getStock();
     return warehouse;
+  }
+
+  private Long parseId(String id) {
+    try {
+      return Long.parseLong(id);
+    } catch (NumberFormatException e) {
+      return null;
+    }
   }
 }

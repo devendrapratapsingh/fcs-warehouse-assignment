@@ -49,9 +49,10 @@ public class WarehouseEndpointTest {
 
   @Test
   @Order(2)
-  public void getWarehouseByCodeShouldReturn200() {
+  public void getWarehouseByIdShouldReturn200() {
+    // id=1 is MWH.001 (ZWOLLE-001, capacity=100) from seed data
     given()
-        .when().get(PATH + "/MWH.001")
+        .when().get(PATH + "/1")
         .then()
         .statusCode(200)
         .body("businessUnitCode", is("MWH.001"))
@@ -61,7 +62,30 @@ public class WarehouseEndpointTest {
 
   @Test
   @Order(3)
-  public void getWarehouseByUnknownCodeShouldReturn404() {
+  public void getWarehouseByAnotherIdShouldReturn200() {
+    // id=2 is MWH.012 (AMSTERDAM-001, capacity=50) from seed data
+    // MUST run before Order 13 (replace) which archives id=2
+    given()
+        .when().get(PATH + "/2")
+        .then()
+        .statusCode(200)
+        .body("businessUnitCode", is("MWH.012"))
+        .body("location", is("AMSTERDAM-001"))
+        .body("capacity", is(50));
+  }
+
+  @Test
+  @Order(4)
+  public void getWarehouseByUnknownIdShouldReturn404() {
+    given()
+        .when().get(PATH + "/9999")
+        .then()
+        .statusCode(404);
+  }
+
+  @Test
+  @Order(5)
+  public void getWarehouseByNonNumericIdShouldReturn404() {
     given()
         .when().get(PATH + "/DOES-NOT-EXIST")
         .then()
@@ -71,7 +95,7 @@ public class WarehouseEndpointTest {
   // ── POST /warehouse ───────────────────────────────────────────────────────
 
   @Test
-  @Order(4)
+  @Order(6)
   public void createWarehouseShouldReturn200AndPersist() {
     // AMSTERDAM-001 allows 5 warehouses, has 1 (MWH.012 cap=50), maxCapacity=100
     // new cap=20 → total 70 < 100 ✓
@@ -93,16 +117,16 @@ public class WarehouseEndpointTest {
         .body("businessUnitCode", is("MWH.999"))
         .body("location", is("AMSTERDAM-001"));
 
-    // Confirm it is now retrievable
+    // Confirm it appears in the list
     given()
-        .when().get(PATH + "/MWH.999")
+        .when().get(PATH)
         .then()
         .statusCode(200)
-        .body("businessUnitCode", is("MWH.999"));
+        .body(containsString("MWH.999"));
   }
 
   @Test
-  @Order(5)
+  @Order(7)
   public void createWarehouseWithDuplicateCodeShouldReturn400() {
     // MWH.001 already exists — duplicate businessUnitCode must be rejected
     String body = """
@@ -123,7 +147,7 @@ public class WarehouseEndpointTest {
   }
 
   @Test
-  @Order(6)
+  @Order(8)
   public void createWarehouseWithUnknownLocationShouldReturn404() {
     String body = """
         {
@@ -145,15 +169,15 @@ public class WarehouseEndpointTest {
   // ── DELETE /warehouse/{id}  (archive) ─────────────────────────────────────
 
   @Test
-  @Order(7)
+  @Order(9)
   public void archiveWarehouseShouldReturn204AndDisappearFromList() {
-    // Archive MWH.023
+    // Archive MWH.023 (id=3)
     given()
-        .when().delete(PATH + "/MWH.023")
+        .when().delete(PATH + "/3")
         .then()
         .statusCode(204);
 
-    // Still retrievable (archive keeps the record) — but no longer in active list
+    // No longer in active list
     given()
         .when().get(PATH)
         .then()
@@ -162,8 +186,17 @@ public class WarehouseEndpointTest {
   }
 
   @Test
-  @Order(8)
+  @Order(10)
   public void archiveNonExistentWarehouseShouldReturn404() {
+    given()
+        .when().delete(PATH + "/9999")
+        .then()
+        .statusCode(404);
+  }
+
+  @Test
+  @Order(11)
+  public void archiveNonNumericIdShouldReturn404() {
     given()
         .when().delete(PATH + "/DOES-NOT-EXIST")
         .then()
@@ -173,7 +206,7 @@ public class WarehouseEndpointTest {
   // ── POST /warehouse/{id}/fulfillment ──────────────────────────────────────
 
   @Test
-  @Order(9)
+  @Order(12)
   public void addFulfillmentShouldReturn201() {
     // MWH.001 + product 3 + store 1 — not yet associated (seed data has 1+2)
     String body = """
@@ -193,7 +226,7 @@ public class WarehouseEndpointTest {
   }
 
   @Test
-  @Order(10)
+  @Order(13)
   public void addDuplicateFulfillmentShouldReturn400() {
     // MWH.001 + product 2 + store 1 already exists in seed data (id=2 is KALLAX, never deleted)
     String body = """
@@ -212,7 +245,7 @@ public class WarehouseEndpointTest {
   }
 
   @Test
-  @Order(11)
+  @Order(14)
   public void addFulfillmentForUnknownWarehouseShouldReturn404() {
     String body = """
         { "productId": 2, "storeId": 1 }
@@ -226,7 +259,7 @@ public class WarehouseEndpointTest {
   }
 
   @Test
-  @Order(12)
+  @Order(15)
   public void addFulfillmentForUnknownStoreShouldReturn404() {
     String body = """
         { "productId": 2, "storeId": 9999 }
@@ -242,7 +275,7 @@ public class WarehouseEndpointTest {
   // ── POST /warehouse/{id}/replacement (replace) ───────────────────────────
 
   @Test
-  @Order(13)
+  @Order(16)
   public void replaceWarehouseShouldReturn200() {
     // MWH.012 (AMSTERDAM-001, cap=50, stock=5) → replace with higher capacity
     String body = """
@@ -264,7 +297,7 @@ public class WarehouseEndpointTest {
   }
 
   @Test
-  @Order(14)
+  @Order(17)
   public void replaceNonExistentWarehouseShouldReturn404() {
     String body = """
         {
@@ -286,7 +319,7 @@ public class WarehouseEndpointTest {
   // ── Fulfillment business rules ─────────────────────────────────────────────
 
   @Test
-  @Order(15)
+  @Order(18)
   public void addFulfillmentExceedingMaxWarehousesPerProductPerStoreShouldReturn400() {
     // seed: MWH.001→product2→store1, MWH.012→product2→store1 would be the 2nd → ok
     // MWH.001→product2→store1 already exists; add MWH.012→product2→store1 = 2nd = ok
@@ -316,7 +349,7 @@ public class WarehouseEndpointTest {
   }
 
   @Test
-  @Order(16)
+  @Order(19)
   public void addFulfillmentExceedingMaxProductTypesPerWarehouseShouldReturn400() {
     // Fill MWH.001 with 5 product types then try a 6th
     // seed already has product1+product2+product3 for MWH.001 (3 types)
@@ -365,7 +398,7 @@ public class WarehouseEndpointTest {
   }
 
   @Test
-  @Order(17)
+  @Order(20)
   public void addFulfillmentExceedingMaxWarehousesPerStoreShouldReturn400() {
     // store2 currently served by MWH.001 (from order 16 above)
     // add MWH.012 → store2 = 2nd warehouse for store2 (ok)

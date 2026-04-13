@@ -8,6 +8,7 @@ import com.fulfilment.application.monolith.warehouses.adapters.database.Fulfillm
 import com.fulfilment.application.monolith.warehouses.adapters.database.FulfillmentService;
 import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import com.fulfilment.application.monolith.warehouses.domain.ports.FulfillmentStore;
 import com.fulfilment.application.monolith.warehouses.domain.validators.MaxProductTypesPerWarehouseValidator;
 import com.fulfilment.application.monolith.warehouses.domain.validators.MaxWarehousesPerProductPerStoreValidator;
 import com.fulfilment.application.monolith.warehouses.domain.validators.MaxWarehousesPerStoreValidator;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.*;
 class FulfillmentServiceTest {
 
   @Mock FulfillmentRepository fulfillmentRepository;
+  @Mock FulfillmentStore fulfillmentStore;
   @Mock WarehouseRepository warehouseRepository;
   @Mock ProductRepository productRepository;
   @Mock StoreRepository storeRepository;
@@ -59,10 +61,11 @@ class FulfillmentServiceTest {
     when(warehouseRepository.findByBusinessUnitCode("MWH.001")).thenReturn(mockWarehouse);
     when(productRepository.findById(1L)).thenReturn(mockProduct);
     when(storeRepository.findById(1L)).thenReturn(mockStore);
-    when(fulfillmentRepository.exists("MWH.001", 1L, 1L)).thenReturn(false);
+    when(fulfillmentStore.exists("MWH.001", 1L, 1L)).thenReturn(false);
     // validators are mocked — do nothing by default (happy path)
 
-    assertDoesNotThrow(() -> fulfillmentService.associate("MWH.001", 1L, 1L));
+    assertDoesNotThrow((org.junit.jupiter.api.function.Executable)
+        () -> fulfillmentService.associate("MWH.001", 1L, 1L));
   }
 
   // ─── Rule: Warehouse must exist ────────────────────────────────────────────
@@ -72,6 +75,7 @@ class FulfillmentServiceTest {
     when(warehouseRepository.findByBusinessUnitCode("INVALID")).thenReturn(null);
 
     NotFoundException ex = assertThrows(NotFoundException.class,
+        (org.junit.jupiter.api.function.Executable)
         () -> fulfillmentService.associate("INVALID", 1L, 1L));
     assertTrue(ex.getMessage().contains("INVALID"));
   }
@@ -84,6 +88,7 @@ class FulfillmentServiceTest {
     when(productRepository.findById(99L)).thenReturn(null);
 
     NotFoundException ex = assertThrows(NotFoundException.class,
+        (org.junit.jupiter.api.function.Executable)
         () -> fulfillmentService.associate("MWH.001", 99L, 1L));
     assertTrue(ex.getMessage().contains("99"));
   }
@@ -95,9 +100,10 @@ class FulfillmentServiceTest {
     when(warehouseRepository.findByBusinessUnitCode("MWH.001")).thenReturn(mockWarehouse);
     when(productRepository.findById(1L)).thenReturn(mockProduct);
     when(storeRepository.findById(1L)).thenReturn(mockStore);
-    when(fulfillmentRepository.exists("MWH.001", 1L, 1L)).thenReturn(true);
+    when(fulfillmentStore.exists("MWH.001", 1L, 1L)).thenReturn(true);
 
     BadRequestException ex = assertThrows(BadRequestException.class,
+        (org.junit.jupiter.api.function.Executable)
         () -> fulfillmentService.associate("MWH.001", 1L, 1L));
     assertTrue(ex.getMessage().contains("already exists"));
   }
@@ -109,11 +115,12 @@ class FulfillmentServiceTest {
     when(warehouseRepository.findByBusinessUnitCode("MWH.001")).thenReturn(mockWarehouse);
     when(productRepository.findById(1L)).thenReturn(mockProduct);
     when(storeRepository.findById(1L)).thenReturn(mockStore);
-    when(fulfillmentRepository.exists("MWH.001", 1L, 1L)).thenReturn(false);
+    when(fulfillmentStore.exists("MWH.001", 1L, 1L)).thenReturn(false);
     doThrow(new BadRequestException("Product 1 already has 2 warehouses assigned for store 1."))
         .when(maxWarehousesPerProductPerStoreValidator).validate("MWH.001", 1L, 1L);
 
     BadRequestException ex = assertThrows(BadRequestException.class,
+        (org.junit.jupiter.api.function.Executable)
         () -> fulfillmentService.associate("MWH.001", 1L, 1L));
     assertTrue(ex.getMessage().contains("2 warehouses"));
   }
@@ -125,11 +132,12 @@ class FulfillmentServiceTest {
     when(warehouseRepository.findByBusinessUnitCode("MWH.001")).thenReturn(mockWarehouse);
     when(productRepository.findById(1L)).thenReturn(mockProduct);
     when(storeRepository.findById(1L)).thenReturn(mockStore);
-    when(fulfillmentRepository.exists("MWH.001", 1L, 1L)).thenReturn(false);
+    when(fulfillmentStore.exists("MWH.001", 1L, 1L)).thenReturn(false);
     doThrow(new BadRequestException("Store 1 already has 3 warehouses assigned."))
         .when(maxWarehousesPerStoreValidator).validate("MWH.001", 1L);
 
     BadRequestException ex = assertThrows(BadRequestException.class,
+        (org.junit.jupiter.api.function.Executable)
         () -> fulfillmentService.associate("MWH.001", 1L, 1L));
     assertTrue(ex.getMessage().contains("3 warehouses"));
   }
@@ -141,11 +149,12 @@ class FulfillmentServiceTest {
     when(warehouseRepository.findByBusinessUnitCode("MWH.001")).thenReturn(mockWarehouse);
     when(productRepository.findById(1L)).thenReturn(mockProduct);
     when(storeRepository.findById(1L)).thenReturn(mockStore);
-    when(fulfillmentRepository.exists("MWH.001", 1L, 1L)).thenReturn(false);
+    when(fulfillmentStore.exists("MWH.001", 1L, 1L)).thenReturn(false);
     doThrow(new BadRequestException("Warehouse 'MWH.001' already stores 5 product types."))
         .when(maxProductTypesPerWarehouseValidator).validate("MWH.001", 1L);
 
     BadRequestException ex = assertThrows(BadRequestException.class,
+        (org.junit.jupiter.api.function.Executable)
         () -> fulfillmentService.associate("MWH.001", 1L, 1L));
     assertTrue(ex.getMessage().contains("5 product types"));
   }

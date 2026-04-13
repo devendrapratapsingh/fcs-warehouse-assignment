@@ -3,7 +3,10 @@ package com.fulfilment.application.monolith.warehouses.domain.usecases;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ReplaceWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
+import com.fulfilment.application.monolith.warehouses.domain.validators.LocationCapacityValidator;
+import com.fulfilment.application.monolith.warehouses.domain.validators.MaxWarehousesPerLocationValidator;
 import com.fulfilment.application.monolith.warehouses.domain.validators.StockWithinCapacityValidator;
+import com.fulfilment.application.monolith.warehouses.domain.validators.ValidLocationValidator;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
@@ -17,11 +20,21 @@ public class ReplaceWarehouseUseCase implements ReplaceWarehouseOperation {
 
   private final WarehouseStore warehouseStore;
   private final StockWithinCapacityValidator stockWithinCapacityValidator;
+  private final ValidLocationValidator validLocationValidator;
+  private final MaxWarehousesPerLocationValidator maxWarehousesPerLocationValidator;
+  private final LocationCapacityValidator locationCapacityValidator;
 
   public ReplaceWarehouseUseCase(
-      WarehouseStore warehouseStore, StockWithinCapacityValidator stockWithinCapacityValidator) {
+      WarehouseStore warehouseStore,
+      StockWithinCapacityValidator stockWithinCapacityValidator,
+      ValidLocationValidator validLocationValidator,
+      MaxWarehousesPerLocationValidator maxWarehousesPerLocationValidator,
+      LocationCapacityValidator locationCapacityValidator) {
     this.warehouseStore = warehouseStore;
     this.stockWithinCapacityValidator = stockWithinCapacityValidator;
+    this.validLocationValidator = validLocationValidator;
+    this.maxWarehousesPerLocationValidator = maxWarehousesPerLocationValidator;
+    this.locationCapacityValidator = locationCapacityValidator;
   }
 
   @Override
@@ -48,12 +61,17 @@ public class ReplaceWarehouseUseCase implements ReplaceWarehouseOperation {
     // 3. New warehouse capacity must accommodate the existing stock (reused validator)
     stockWithinCapacityValidator.validate(newWarehouse);
 
-    // 4. Archive the old warehouse
+    // 4. Archive the old warehouse FIRST — frees up location slot & capacity
     existing.archivedAt = LocalDateTime.now();
     warehouseStore.update(existing);
     LOGGER.infof("Archived old warehouse '%s' at %s", existing.businessUnitCode, existing.archivedAt);
 
-    // 5. Create the new warehouse with the same business unit code
+    // 5. Validate new warehouse location (same validators as Create)
+    validLocationValidator.validate(newWarehouse);
+    maxWarehousesPerLocationValidator.validate(newWarehouse);
+    locationCapacityValidator.validate(newWarehouse);
+
+    // 6. Create the new warehouse with the same business unit code
     warehouseStore.create(newWarehouse);
     LOGGER.infof("New warehouse '%s' created as replacement", newWarehouse.businessUnitCode);
   }

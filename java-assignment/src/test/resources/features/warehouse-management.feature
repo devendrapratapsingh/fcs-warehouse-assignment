@@ -20,16 +20,20 @@ Feature: Warehouse Management
     And the response body contains "MWH.012"
     And the response body contains "MWH.023"
 
-  # ── Get by code ───────────────────────────────────────────────────────────
+  # ── Get by ID ──────────────────────────────────────────────────────────────
 
-  Scenario: Get a warehouse by its business unit code
-    When I request GET "/warehouse/MWH.001"
+  Scenario: Get a warehouse by its database ID
+    When I request GET "/warehouse/1"
     Then the response status is 200
     And the response JSON field "businessUnitCode" equals "MWH.001"
     And the response JSON field "location" equals "ZWOLLE-001"
     And the response JSON field "capacity" equals 100
 
-  Scenario: Get a warehouse with an unknown code returns 404
+  Scenario: Get a warehouse with an unknown ID returns 404
+    When I request GET "/warehouse/9999"
+    Then the response status is 404
+
+  Scenario: Get a warehouse with a non-numeric ID returns 404
     When I request GET "/warehouse/DOES-NOT-EXIST"
     Then the response status is 404
 
@@ -89,13 +93,13 @@ Feature: Warehouse Management
   # ── Archive (soft-delete) ─────────────────────────────────────────────────
 
   Scenario: Archiving a warehouse removes it from the active list
-    When I request DELETE "/warehouse/MWH.023"
+    When I request DELETE "/warehouse/3"
     Then the response status is 204
     And when I request GET "/warehouse"
     Then the response body does not contain "MWH.023"
 
   Scenario: Archiving a non-existent warehouse returns 404
-    When I request DELETE "/warehouse/DOES-NOT-EXIST"
+    When I request DELETE "/warehouse/9999"
     Then the response status is 404
 
   # ── Replace (POST /{code}/replacement) ───────────────────────────────────
@@ -115,4 +119,12 @@ Feature: Warehouse Management
       | location         | AMSTERDAM-001  |
       | capacity         | 50             |
       | stock            | 0              |
+    Then the response status is 404
+
+  Scenario: Replacing a warehouse with an invalid location returns 404
+    When I replace warehouse "MWH.012" with:
+      | businessUnitCode | MWH.012     |
+      | location         | NOWHERE-999 |
+      | capacity         | 60          |
+      | stock            | 5           |
     Then the response status is 404

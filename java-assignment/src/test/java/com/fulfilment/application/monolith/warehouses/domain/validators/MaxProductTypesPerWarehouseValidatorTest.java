@@ -3,7 +3,7 @@ package com.fulfilment.application.monolith.warehouses.domain.validators;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.fulfilment.application.monolith.warehouses.adapters.database.FulfillmentRepository;
+import com.fulfilment.application.monolith.warehouses.domain.ports.FulfillmentStore;
 import jakarta.ws.rs.BadRequestException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class MaxProductTypesPerWarehouseValidatorTest {
 
-  @Mock FulfillmentRepository fulfillmentRepository;
+  @Mock FulfillmentStore fulfillmentStore;
 
   @InjectMocks MaxProductTypesPerWarehouseValidator validator;
 
@@ -28,24 +28,24 @@ class MaxProductTypesPerWarehouseValidatorTest {
 
   @Test
   void shouldPass_whenWarehouseStoresNoProductsYet() {
-    when(fulfillmentRepository.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(false);
-    when(fulfillmentRepository.countDistinctProductsInWarehouse(WAREHOUSE)).thenReturn(0L);
+    when(fulfillmentStore.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(false);
+    when(fulfillmentStore.countDistinctProductsInWarehouse(WAREHOUSE)).thenReturn(0L);
     assertDoesNotThrow(() -> validator.validate(WAREHOUSE, PRODUCT));
   }
 
   @Test
   void shouldPass_whenWarehouseStoresFourProductTypes() {
-    when(fulfillmentRepository.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(false);
-    when(fulfillmentRepository.countDistinctProductsInWarehouse(WAREHOUSE)).thenReturn(4L);
+    when(fulfillmentStore.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(false);
+    when(fulfillmentStore.countDistinctProductsInWarehouse(WAREHOUSE)).thenReturn(4L);
     assertDoesNotThrow(() -> validator.validate(WAREHOUSE, PRODUCT));
   }
 
   @Test
   void shouldPass_whenProductAlreadyStoredInWarehouse_skipsCountCheck() {
     // product is already stored → idempotent, count is not checked
-    when(fulfillmentRepository.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(true);
+    when(fulfillmentStore.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(true);
     assertDoesNotThrow(() -> validator.validate(WAREHOUSE, PRODUCT));
-    verify(fulfillmentRepository, never()).countDistinctProductsInWarehouse(any());
+    verify(fulfillmentStore, never()).countDistinctProductsInWarehouse(any());
   }
 
   // ── Boundary ───────────────────────────────────────────────────────────────
@@ -53,8 +53,8 @@ class MaxProductTypesPerWarehouseValidatorTest {
   @Test
   void shouldPass_atExactlyFourProductTypes() {
     // MAX = 5, so count=4 is the last allowed new product
-    when(fulfillmentRepository.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(false);
-    when(fulfillmentRepository.countDistinctProductsInWarehouse(WAREHOUSE)).thenReturn(4L);
+    when(fulfillmentStore.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(false);
+    when(fulfillmentStore.countDistinctProductsInWarehouse(WAREHOUSE)).thenReturn(4L);
     assertDoesNotThrow(() -> validator.validate(WAREHOUSE, PRODUCT));
   }
 
@@ -62,8 +62,8 @@ class MaxProductTypesPerWarehouseValidatorTest {
 
   @Test
   void shouldThrow_whenWarehouseAlreadyHasFiveProductTypes() {
-    when(fulfillmentRepository.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(false);
-    when(fulfillmentRepository.countDistinctProductsInWarehouse(WAREHOUSE)).thenReturn(5L);
+    when(fulfillmentStore.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(false);
+    when(fulfillmentStore.countDistinctProductsInWarehouse(WAREHOUSE)).thenReturn(5L);
     BadRequestException ex = assertThrows(BadRequestException.class,
         () -> validator.validate(WAREHOUSE, PRODUCT));
     assertTrue(ex.getMessage().contains("5 product types"));
@@ -72,8 +72,8 @@ class MaxProductTypesPerWarehouseValidatorTest {
 
   @Test
   void shouldThrow_whenCountExceedsLimit() {
-    when(fulfillmentRepository.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(false);
-    when(fulfillmentRepository.countDistinctProductsInWarehouse(WAREHOUSE)).thenReturn(7L);
+    when(fulfillmentStore.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(false);
+    when(fulfillmentStore.countDistinctProductsInWarehouse(WAREHOUSE)).thenReturn(7L);
     assertThrows(BadRequestException.class, () -> validator.validate(WAREHOUSE, PRODUCT));
   }
 }

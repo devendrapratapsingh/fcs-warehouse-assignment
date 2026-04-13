@@ -3,7 +3,7 @@ package com.fulfilment.application.monolith.warehouses.domain.validators;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.fulfilment.application.monolith.warehouses.adapters.database.FulfillmentRepository;
+import com.fulfilment.application.monolith.warehouses.domain.ports.FulfillmentStore;
 import jakarta.ws.rs.BadRequestException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class MaxWarehousesPerStoreValidatorTest {
 
-  @Mock FulfillmentRepository fulfillmentRepository;
+  @Mock FulfillmentStore fulfillmentStore;
 
   @InjectMocks MaxWarehousesPerStoreValidator validator;
 
@@ -28,31 +28,31 @@ class MaxWarehousesPerStoreValidatorTest {
 
   @Test
   void shouldPass_whenStoreHasNoWarehousesYet() {
-    when(fulfillmentRepository.warehouseAlreadyServesStore(WAREHOUSE, STORE)).thenReturn(false);
-    when(fulfillmentRepository.countDistinctWarehousesForStore(STORE)).thenReturn(0L);
+    when(fulfillmentStore.warehouseAlreadyServesStore(WAREHOUSE, STORE)).thenReturn(false);
+    when(fulfillmentStore.countDistinctWarehousesForStore(STORE)).thenReturn(0L);
     assertDoesNotThrow(() -> validator.validate(WAREHOUSE, STORE));
   }
 
   @Test
   void shouldPass_whenStoreHasTwoWarehousesAndThisIsNew() {
-    when(fulfillmentRepository.warehouseAlreadyServesStore(WAREHOUSE, STORE)).thenReturn(false);
-    when(fulfillmentRepository.countDistinctWarehousesForStore(STORE)).thenReturn(2L);
+    when(fulfillmentStore.warehouseAlreadyServesStore(WAREHOUSE, STORE)).thenReturn(false);
+    when(fulfillmentStore.countDistinctWarehousesForStore(STORE)).thenReturn(2L);
     assertDoesNotThrow(() -> validator.validate(WAREHOUSE, STORE));
   }
 
   @Test
   void shouldPass_whenWarehouseAlreadyServesStore_skipsCountCheck() {
-    when(fulfillmentRepository.warehouseAlreadyServesStore(WAREHOUSE, STORE)).thenReturn(true);
+    when(fulfillmentStore.warehouseAlreadyServesStore(WAREHOUSE, STORE)).thenReturn(true);
     assertDoesNotThrow(() -> validator.validate(WAREHOUSE, STORE));
-    verify(fulfillmentRepository, never()).countDistinctWarehousesForStore(any());
+    verify(fulfillmentStore, never()).countDistinctWarehousesForStore(any());
   }
 
   // ── Failure ────────────────────────────────────────────────────────────────
 
   @Test
   void shouldThrow_whenStoreAlreadyHasThreeWarehouses() {
-    when(fulfillmentRepository.warehouseAlreadyServesStore(WAREHOUSE, STORE)).thenReturn(false);
-    when(fulfillmentRepository.countDistinctWarehousesForStore(STORE)).thenReturn(3L);
+    when(fulfillmentStore.warehouseAlreadyServesStore(WAREHOUSE, STORE)).thenReturn(false);
+    when(fulfillmentStore.countDistinctWarehousesForStore(STORE)).thenReturn(3L);
     BadRequestException ex = assertThrows(BadRequestException.class,
         () -> validator.validate(WAREHOUSE, STORE));
     assertTrue(ex.getMessage().contains("3 warehouses"));
@@ -61,8 +61,8 @@ class MaxWarehousesPerStoreValidatorTest {
 
   @Test
   void shouldThrow_whenCountExceedsLimit() {
-    when(fulfillmentRepository.warehouseAlreadyServesStore(WAREHOUSE, STORE)).thenReturn(false);
-    when(fulfillmentRepository.countDistinctWarehousesForStore(STORE)).thenReturn(5L);
+    when(fulfillmentStore.warehouseAlreadyServesStore(WAREHOUSE, STORE)).thenReturn(false);
+    when(fulfillmentStore.countDistinctWarehousesForStore(STORE)).thenReturn(5L);
     assertThrows(BadRequestException.class, () -> validator.validate(WAREHOUSE, STORE));
   }
 }

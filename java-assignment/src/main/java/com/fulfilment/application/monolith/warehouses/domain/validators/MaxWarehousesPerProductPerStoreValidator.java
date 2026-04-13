@@ -1,8 +1,7 @@
 package com.fulfilment.application.monolith.warehouses.domain.validators;
 
-import com.fulfilment.application.monolith.warehouses.adapters.database.FulfillmentRepository;
+import com.fulfilment.application.monolith.warehouses.domain.ports.FulfillmentStore;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 
 /**
@@ -13,10 +12,14 @@ public class MaxWarehousesPerProductPerStoreValidator {
 
   private static final int MAX = 2;
 
-  @Inject FulfillmentRepository fulfillmentRepository;
+  private final FulfillmentStore fulfillmentStore;
+
+  public MaxWarehousesPerProductPerStoreValidator(FulfillmentStore fulfillmentStore) {
+    this.fulfillmentStore = fulfillmentStore;
+  }
 
   public void validate(String warehouseCode, Long productId, Long storeId) {
-    long count = fulfillmentRepository.countWarehousesForProductInStore(productId, storeId);
+    long count = fulfillmentStore.countWarehousesForProductInStore(productId, storeId);
     if (count >= MAX) {
       throw new BadRequestException(
           "Product " + productId + " already has " + MAX

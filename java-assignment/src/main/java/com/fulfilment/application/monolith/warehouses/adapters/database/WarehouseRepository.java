@@ -52,6 +52,12 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
     return db != null ? db.toWarehouse() : null;
   }
 
+  @Override
+  public Warehouse findActiveById(Long id) {
+    DbWarehouse db = findById(id);
+    return (db != null && db.archivedAt == null) ? db.toWarehouse() : null;
+  }
+
   public List<Warehouse> findActiveByLocation(String location) {
     return find("location = ?1 and archivedAt is null", location)
         .stream().map(DbWarehouse::toWarehouse).toList();

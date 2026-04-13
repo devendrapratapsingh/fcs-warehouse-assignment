@@ -2,6 +2,7 @@ package com.fulfilment.application.monolith.warehouses.adapters.database;
 
 import com.fulfilment.application.monolith.products.ProductRepository;
 import com.fulfilment.application.monolith.stores.StoreRepository;
+import com.fulfilment.application.monolith.warehouses.domain.ports.FulfillmentStore;
 import com.fulfilment.application.monolith.warehouses.domain.validators.MaxProductTypesPerWarehouseValidator;
 import com.fulfilment.application.monolith.warehouses.domain.validators.MaxWarehousesPerProductPerStoreValidator;
 import com.fulfilment.application.monolith.warehouses.domain.validators.MaxWarehousesPerStoreValidator;
@@ -18,6 +19,7 @@ public class FulfillmentService {
   private static final Logger LOGGER = Logger.getLogger(FulfillmentService.class);
 
   @Inject FulfillmentRepository fulfillmentRepository;
+  @Inject FulfillmentStore fulfillmentStore;
   @Inject WarehouseRepository warehouseRepository;
   @Inject ProductRepository productRepository;
   @Inject StoreRepository storeRepository;
@@ -46,7 +48,7 @@ public class FulfillmentService {
       LOGGER.warnf("Associate failed — store %d not found", storeId);
       throw new NotFoundException("Store with id " + storeId + " not found.");
     }
-    if (fulfillmentRepository.exists(warehouseBusinessUnitCode, productId, storeId)) {
+    if (fulfillmentStore.exists(warehouseBusinessUnitCode, productId, storeId)) {
       LOGGER.warnf("Associate failed — association already exists: warehouse=%s, product=%d, store=%d",
           warehouseBusinessUnitCode, productId, storeId);
       throw new BadRequestException("This warehouse-product-store association already exists.");
