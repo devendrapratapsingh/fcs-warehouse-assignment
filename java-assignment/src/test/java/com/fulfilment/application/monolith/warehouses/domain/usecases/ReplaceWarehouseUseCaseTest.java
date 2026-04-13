@@ -5,6 +5,7 @@ import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStor
 import com.fulfilment.application.monolith.warehouses.domain.validators.LocationCapacityValidator;
 import com.fulfilment.application.monolith.warehouses.domain.validators.MaxWarehousesPerLocationValidator;
 import com.fulfilment.application.monolith.warehouses.domain.validators.StockWithinCapacityValidator;
+import com.fulfilment.application.monolith.warehouses.domain.validators.UniqueBusinessUnitCodeValidator;
 import com.fulfilment.application.monolith.warehouses.domain.validators.ValidLocationValidator;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
@@ -24,6 +25,7 @@ class ReplaceWarehouseUseCaseTest {
 
   @Mock WarehouseStore warehouseStore;
   @Mock StockWithinCapacityValidator stockWithinCapacityValidator;
+  @Mock UniqueBusinessUnitCodeValidator uniqueBusinessUnitCodeValidator;
   @Mock ValidLocationValidator validLocationValidator;
   @Mock MaxWarehousesPerLocationValidator maxWarehousesPerLocationValidator;
   @Mock LocationCapacityValidator locationCapacityValidator;
@@ -65,6 +67,7 @@ class ReplaceWarehouseUseCaseTest {
     // New warehouse created
     verify(warehouseStore).create(replacement);
     verify(stockWithinCapacityValidator).validate(replacement);
+    verify(uniqueBusinessUnitCodeValidator).validate(replacement);
     verify(validLocationValidator).validate(replacement);
     verify(maxWarehousesPerLocationValidator).validate(replacement);
     verify(locationCapacityValidator).validate(replacement);
@@ -154,6 +157,22 @@ class ReplaceWarehouseUseCaseTest {
         () -> useCase.replace(replacement));
     assertTrue(ex.getMessage().contains("exceed"));
     verify(warehouseStore, never()).create(any());
+  }
+
+  // ─── Failure: duplicate business unit code ────────────────────────────────
+
+  @Test
+  void shouldThrowBadRequest_WhenBusinessUnitCodeAlreadyExists() {
+    when(warehouseStore.findByBusinessUnitCode("MWH.001")).thenReturn(existing);
+    doThrow(new BadRequestException("Business unit code 'MWH.001' already exists."))
+        .when(uniqueBusinessUnitCodeValidator).validate(replacement);
+
+    BadRequestException ex = assertThrows(BadRequestException.class,
+        () -> useCase.replace(replacement));
+    assertTrue(ex.getMessage().contains("MWH.001"));
+    verify(warehouseStore, never()).create(any());
+    // Old warehouse should have been archived before uniqueness check
+    verify(warehouseStore).update(existing);
   }
 
   // ─── Verify old is archived before new is created ─────────────────────────

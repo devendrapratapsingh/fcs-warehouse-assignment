@@ -93,7 +93,7 @@ public class WarehouseResourceImpl implements WarehouseResource {
   public Response addFulfillment(
       @PathParam("businessUnitCode") String businessUnitCode,
       @NotNull FulfillmentRequest request) {
-    var result = fulfillmentService.associate(businessUnitCode, request.productId, request.storeId);
+    Object result = fulfillmentService.associate(businessUnitCode, request.productId, request.storeId);
     return Response.status(201).entity(result).build();
   }
 
