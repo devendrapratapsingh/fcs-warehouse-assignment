@@ -1,6 +1,5 @@
 package com.fulfilment.application.monolith.warehouses.adapters.restapi;
 
-import com.fulfilment.application.monolith.warehouses.adapters.database.FulfillmentService;
 import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ArchiveWarehouseOperation;
@@ -11,14 +10,7 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.util.List;
 
 @RequestScoped
@@ -29,10 +21,7 @@ public class WarehouseResourceImpl implements WarehouseResource {
   @Inject private CreateWarehouseOperation createWarehouseOperation;
 
   @Inject private ArchiveWarehouseOperation archiveWarehouseOperation;
-
   @Inject private ReplaceWarehouseOperation replaceWarehouseOperation;
-
-  @Inject private FulfillmentService fulfillmentService;
 
   @Override
   public List<com.warehouse.api.beans.Warehouse> listAllWarehousesUnits() {
@@ -83,18 +72,6 @@ public class WarehouseResourceImpl implements WarehouseResource {
     newWarehouse.businessUnitCode = businessUnitCode;
     replaceWarehouseOperation.replace(newWarehouse);
     return toWarehouseResponse(warehouseRepository.findByBusinessUnitCode(businessUnitCode));
-  }
-
-  @POST
-  @Path("/{businessUnitCode}/fulfillment")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  @Transactional
-  public Response addFulfillment(
-      @PathParam("businessUnitCode") String businessUnitCode,
-      @NotNull FulfillmentRequest request) {
-    Object result = fulfillmentService.associate(businessUnitCode, request.productId, request.storeId);
-    return Response.status(201).entity(result).build();
   }
 
   private com.warehouse.api.beans.Warehouse toWarehouseResponse(Warehouse warehouse) {

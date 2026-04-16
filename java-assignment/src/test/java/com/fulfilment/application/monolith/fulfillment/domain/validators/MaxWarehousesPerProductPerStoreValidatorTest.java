@@ -1,9 +1,9 @@
-package com.fulfilment.application.monolith.warehouses.domain.validators;
+package com.fulfilment.application.monolith.fulfillment.domain.validators;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.fulfilment.application.monolith.warehouses.domain.ports.FulfillmentStore;
+import com.fulfilment.application.monolith.fulfillment.domain.ports.FulfillmentStore;
 import jakarta.ws.rs.BadRequestException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,14 +18,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MaxWarehousesPerProductPerStoreValidatorTest {
 
   @Mock FulfillmentStore fulfillmentStore;
-
   @InjectMocks MaxWarehousesPerProductPerStoreValidator validator;
 
   private static final String WAREHOUSE = "MWH.001";
   private static final Long   PRODUCT   = 1L;
   private static final Long   STORE     = 1L;
-
-  // ── Happy path ─────────────────────────────────────────────────────────────
 
   @Test
   void shouldPass_whenNoWarehousesAssignedYet() {
@@ -39,16 +36,11 @@ class MaxWarehousesPerProductPerStoreValidatorTest {
     assertDoesNotThrow(() -> validator.validate(WAREHOUSE, PRODUCT, STORE));
   }
 
-  // ── Boundary ───────────────────────────────────────────────────────────────
-
   @Test
   void shouldPass_atExactlyOneBelowLimit() {
-    // MAX = 2, so count=1 is still allowed
     when(fulfillmentStore.countWarehousesForProductInStore(PRODUCT, STORE)).thenReturn(1L);
     assertDoesNotThrow(() -> validator.validate(WAREHOUSE, PRODUCT, STORE));
   }
-
-  // ── Failure ────────────────────────────────────────────────────────────────
 
   @Test
   void shouldThrow_whenMaxWarehousesReached() {
@@ -61,7 +53,6 @@ class MaxWarehousesPerProductPerStoreValidatorTest {
 
   @Test
   void shouldThrow_whenCountExceedsLimit() {
-    // Guard against data anomaly where count is already above the limit
     when(fulfillmentStore.countWarehousesForProductInStore(PRODUCT, STORE)).thenReturn(3L);
     assertThrows(BadRequestException.class,
         () -> validator.validate(WAREHOUSE, PRODUCT, STORE));

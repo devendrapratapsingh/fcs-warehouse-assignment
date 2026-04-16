@@ -1,4 +1,4 @@
-package com.fulfilment.application.monolith.warehouses.adapters.restapi;
+package com.fulfilment.application.monolith.fulfillment.adapters.restapi;
 
 public class FulfillmentRequest {
   public Long productId;

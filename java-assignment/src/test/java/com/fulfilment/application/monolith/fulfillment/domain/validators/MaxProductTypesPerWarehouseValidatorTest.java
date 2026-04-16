@@ -1,9 +1,9 @@
-package com.fulfilment.application.monolith.warehouses.domain.validators;
+package com.fulfilment.application.monolith.fulfillment.domain.validators;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.fulfilment.application.monolith.warehouses.domain.ports.FulfillmentStore;
+import com.fulfilment.application.monolith.fulfillment.domain.ports.FulfillmentStore;
 import jakarta.ws.rs.BadRequestException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,13 +18,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MaxProductTypesPerWarehouseValidatorTest {
 
   @Mock FulfillmentStore fulfillmentStore;
-
   @InjectMocks MaxProductTypesPerWarehouseValidator validator;
 
   private static final String WAREHOUSE = "MWH.001";
   private static final Long   PRODUCT   = 99L;
-
-  // ── Happy path ─────────────────────────────────────────────────────────────
 
   @Test
   void shouldPass_whenWarehouseStoresNoProductsYet() {
@@ -42,23 +39,17 @@ class MaxProductTypesPerWarehouseValidatorTest {
 
   @Test
   void shouldPass_whenProductAlreadyStoredInWarehouse_skipsCountCheck() {
-    // product is already stored → idempotent, count is not checked
     when(fulfillmentStore.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(true);
     assertDoesNotThrow(() -> validator.validate(WAREHOUSE, PRODUCT));
     verify(fulfillmentStore, never()).countDistinctProductsInWarehouse(any());
   }
 
-  // ── Boundary ───────────────────────────────────────────────────────────────
-
   @Test
   void shouldPass_atExactlyFourProductTypes() {
-    // MAX = 5, so count=4 is the last allowed new product
     when(fulfillmentStore.warehouseAlreadyStoresProduct(WAREHOUSE, PRODUCT)).thenReturn(false);
     when(fulfillmentStore.countDistinctProductsInWarehouse(WAREHOUSE)).thenReturn(4L);
     assertDoesNotThrow(() -> validator.validate(WAREHOUSE, PRODUCT));
   }
-
-  // ── Failure ────────────────────────────────────────────────────────────────
 
   @Test
   void shouldThrow_whenWarehouseAlreadyHasFiveProductTypes() {

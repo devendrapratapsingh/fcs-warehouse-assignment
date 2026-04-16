@@ -172,6 +172,8 @@
                         <exclude>com/warehouse/api/**</exclude>
                         <!-- JPA entity — only Lombok getters/setters, no logic -->
                         <exclude>com/fulfilment/application/monolith/warehouses/domain/models/**</exclude>
+                        <exclude>com/fulfilment/application/monolith/fulfillment/domain/models/**</exclude>
+                        <exclude>com/fulfilment/application/monolith/fulfillment/domain/ports/**</exclude>
                         <!-- Marker interfaces — no executable lines -->
                         <exclude>com/fulfilment/application/monolith/warehouses/domain/ports/**</exclude>
                         <exclude>com/fulfilment/application/monolith/warehouses/domain/validators/WarehouseValidator.class</exclude>

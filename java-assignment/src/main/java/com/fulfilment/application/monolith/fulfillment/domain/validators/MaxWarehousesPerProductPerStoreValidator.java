@@ -1,6 +1,6 @@
-package com.fulfilment.application.monolith.warehouses.domain.validators;
+package com.fulfilment.application.monolith.fulfillment.domain.validators;
 
-import com.fulfilment.application.monolith.warehouses.domain.ports.FulfillmentStore;
+import com.fulfilment.application.monolith.fulfillment.domain.ports.FulfillmentStore;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.BadRequestException;
 

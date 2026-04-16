@@ -1,8 +1,8 @@
-package com.fulfilment.application.monolith.warehouses.domain.ports;
+package com.fulfilment.application.monolith.fulfillment.domain.ports;
 
 /**
- * Port interface for fulfillment read operations.
- * Domain validators depend on this port instead of the adapter (FulfillmentRepository).
+ * Port (driven): read-only fulfillment queries used by domain validators.
+ * The domain layer depends on this interface — never on the adapter (FulfillmentRepository).
  */
 public interface FulfillmentStore {
 

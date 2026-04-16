@@ -1,9 +1,9 @@
-package com.fulfilment.application.monolith.warehouses.domain.validators;
+package com.fulfilment.application.monolith.fulfillment.domain.validators;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.fulfilment.application.monolith.warehouses.domain.ports.FulfillmentStore;
+import com.fulfilment.application.monolith.fulfillment.domain.ports.FulfillmentStore;
 import jakarta.ws.rs.BadRequestException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,13 +18,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MaxWarehousesPerStoreValidatorTest {
 
   @Mock FulfillmentStore fulfillmentStore;
-
   @InjectMocks MaxWarehousesPerStoreValidator validator;
 
   private static final String WAREHOUSE = "MWH.NEW";
   private static final Long   STORE     = 1L;
-
-  // ── Happy path ─────────────────────────────────────────────────────────────
 
   @Test
   void shouldPass_whenStoreHasNoWarehousesYet() {
@@ -46,8 +43,6 @@ class MaxWarehousesPerStoreValidatorTest {
     assertDoesNotThrow(() -> validator.validate(WAREHOUSE, STORE));
     verify(fulfillmentStore, never()).countDistinctWarehousesForStore(any());
   }
-
-  // ── Failure ────────────────────────────────────────────────────────────────
 
   @Test
   void shouldThrow_whenStoreAlreadyHasThreeWarehouses() {
